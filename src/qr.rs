@@ -3,15 +3,13 @@
 use crate::module::Module;
 use core::fmt::{Debug, Formatter};
 use core::ops::{Index, IndexMut};
+use std::ops::RangeTo;
 
 use crate::datamasking::Mask;
 use crate::encode::Mode;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::helpers;
 use crate::{encode, Version, ECL};
-
-const QR_MAX_WIDTH: usize = 177;
-const QR_MAX_MODULES: usize = QR_MAX_WIDTH * QR_MAX_WIDTH;
 
 /// A `QRCode` can be created using [`QRBuilder`]. Simple API for simple usage.
 /// If you need to use `QRCode` directly, please file an [issue on
@@ -29,7 +27,7 @@ pub struct QRCode {
     /// # Other data type possible:
     /// - Templated Matrix was faster but crate size was huge.
     /// - Vector using `with_capacity`, really bad.
-    pub data: [Module; QR_MAX_MODULES],
+    pub data: QRCodeData,
     /// Width & Height of QRCode. If manually set, should be `version * 4 + 17`, `version` going
     /// from 1 to 40 both included.
     pub size: usize,
@@ -62,12 +60,212 @@ pub struct QRCode {
     pub mode: Option<Mode>,
 }
 
+#[derive(Clone, Debug)]
+#[cfg(feature = "fast")]
+pub enum QRCodeData {
+    V01(Box<[Module; 21 * 21]>),
+    V02(Box<[Module; 25 * 25]>),
+    V03(Box<[Module; 29 * 29]>),
+    V04(Box<[Module; 33 * 33]>),
+    V05(Box<[Module; 37 * 37]>),
+    V06(Box<[Module; 41 * 41]>),
+    V07(Box<[Module; 45 * 45]>),
+    V08(Box<[Module; 49 * 49]>),
+    V09(Box<[Module; 53 * 53]>),
+    V10(Box<[Module; 57 * 57]>),
+    V11(Box<[Module; 61 * 61]>),
+    V12(Box<[Module; 65 * 65]>),
+    V13(Box<[Module; 69 * 69]>),
+    V14(Box<[Module; 73 * 73]>),
+    V15(Box<[Module; 77 * 77]>),
+    V16(Box<[Module; 81 * 81]>),
+    V17(Box<[Module; 85 * 85]>),
+    V18(Box<[Module; 89 * 89]>),
+    V19(Box<[Module; 93 * 93]>),
+    V20(Box<[Module; 97 * 97]>),
+    V21(Box<[Module; 101 * 101]>),
+    V22(Box<[Module; 105 * 105]>),
+    V23(Box<[Module; 109 * 109]>),
+    V24(Box<[Module; 113 * 113]>),
+    V25(Box<[Module; 117 * 117]>),
+    V26(Box<[Module; 121 * 121]>),
+    V27(Box<[Module; 125 * 125]>),
+    V28(Box<[Module; 129 * 129]>),
+    V29(Box<[Module; 133 * 133]>),
+    V30(Box<[Module; 137 * 137]>),
+    V31(Box<[Module; 141 * 141]>),
+    V32(Box<[Module; 145 * 145]>),
+    V33(Box<[Module; 149 * 149]>),
+    V34(Box<[Module; 153 * 153]>),
+    V35(Box<[Module; 157 * 157]>),
+    V36(Box<[Module; 161 * 161]>),
+    V37(Box<[Module; 165 * 165]>),
+    V38(Box<[Module; 169 * 169]>),
+    V39(Box<[Module; 173 * 173]>),
+    V40(Box<[Module; 177 * 177]>),
+}
+
+#[derive(Clone, Debug)]
+#[cfg(not(feature = "fast"))]
+pub struct QRCodeData([Module; 177 * 177]);
+
+impl QRCodeData {
+    #[cfg(feature = "fast")]
+    pub fn new(size: usize) -> Self {
+        const DEFAULT_MODULE: Module = Module::data(Module::LIGHT);
+        match size {
+            21 => QRCodeData::V01(Box::new([DEFAULT_MODULE; 21 * 21])),
+            25 => QRCodeData::V02(Box::new([DEFAULT_MODULE; 25 * 25])),
+            29 => QRCodeData::V03(Box::new([DEFAULT_MODULE; 29 * 29])),
+            33 => QRCodeData::V04(Box::new([DEFAULT_MODULE; 33 * 33])),
+            37 => QRCodeData::V05(Box::new([DEFAULT_MODULE; 37 * 37])),
+            41 => QRCodeData::V06(Box::new([DEFAULT_MODULE; 41 * 41])),
+            45 => QRCodeData::V07(Box::new([DEFAULT_MODULE; 45 * 45])),
+            49 => QRCodeData::V08(Box::new([DEFAULT_MODULE; 49 * 49])),
+            53 => QRCodeData::V09(Box::new([DEFAULT_MODULE; 53 * 53])),
+            57 => QRCodeData::V10(Box::new([DEFAULT_MODULE; 57 * 57])),
+            61 => QRCodeData::V11(Box::new([DEFAULT_MODULE; 61 * 61])),
+            65 => QRCodeData::V12(Box::new([DEFAULT_MODULE; 65 * 65])),
+            69 => QRCodeData::V13(Box::new([DEFAULT_MODULE; 69 * 69])),
+            73 => QRCodeData::V14(Box::new([DEFAULT_MODULE; 73 * 73])),
+            77 => QRCodeData::V15(Box::new([DEFAULT_MODULE; 77 * 77])),
+            81 => QRCodeData::V16(Box::new([DEFAULT_MODULE; 81 * 81])),
+            85 => QRCodeData::V17(Box::new([DEFAULT_MODULE; 85 * 85])),
+            89 => QRCodeData::V18(Box::new([DEFAULT_MODULE; 89 * 89])),
+            93 => QRCodeData::V19(Box::new([DEFAULT_MODULE; 93 * 93])),
+            97 => QRCodeData::V20(Box::new([DEFAULT_MODULE; 97 * 97])),
+            101 => QRCodeData::V21(Box::new([DEFAULT_MODULE; 101 * 101])),
+            105 => QRCodeData::V22(Box::new([DEFAULT_MODULE; 105 * 105])),
+            109 => QRCodeData::V23(Box::new([DEFAULT_MODULE; 109 * 109])),
+            113 => QRCodeData::V24(Box::new([DEFAULT_MODULE; 113 * 113])),
+            117 => QRCodeData::V25(Box::new([DEFAULT_MODULE; 117 * 117])),
+            121 => QRCodeData::V26(Box::new([DEFAULT_MODULE; 121 * 121])),
+            125 => QRCodeData::V27(Box::new([DEFAULT_MODULE; 125 * 125])),
+            129 => QRCodeData::V28(Box::new([DEFAULT_MODULE; 129 * 129])),
+            133 => QRCodeData::V29(Box::new([DEFAULT_MODULE; 133 * 133])),
+            137 => QRCodeData::V30(Box::new([DEFAULT_MODULE; 137 * 137])),
+            141 => QRCodeData::V31(Box::new([DEFAULT_MODULE; 141 * 141])),
+            145 => QRCodeData::V32(Box::new([DEFAULT_MODULE; 145 * 145])),
+            149 => QRCodeData::V33(Box::new([DEFAULT_MODULE; 149 * 149])),
+            153 => QRCodeData::V34(Box::new([DEFAULT_MODULE; 153 * 153])),
+            157 => QRCodeData::V35(Box::new([DEFAULT_MODULE; 157 * 157])),
+            161 => QRCodeData::V36(Box::new([DEFAULT_MODULE; 161 * 161])),
+            165 => QRCodeData::V37(Box::new([DEFAULT_MODULE; 165 * 165])),
+            169 => QRCodeData::V38(Box::new([DEFAULT_MODULE; 169 * 169])),
+            173 => QRCodeData::V39(Box::new([DEFAULT_MODULE; 173 * 173])),
+            177 => QRCodeData::V40(Box::new([DEFAULT_MODULE; 177 * 177])),
+            _ => unreachable!(),
+        }
+    }
+
+    #[cfg(not(feature = "fast"))]
+    pub const fn new(size: usize) -> Self {
+        Self([Module::data(Module::LIGHT); 177 * 177])
+    }
+}
+
+#[cfg(feature = "fast")]
+impl AsRef<[Module]> for QRCodeData {
+    fn as_ref(&self) -> &[Module] {
+        match self {
+            QRCodeData::V01(data) => &data[..],
+            QRCodeData::V02(data) => &data[..],
+            QRCodeData::V03(data) => &data[..],
+            QRCodeData::V04(data) => &data[..],
+            QRCodeData::V05(data) => &data[..],
+            QRCodeData::V06(data) => &data[..],
+            QRCodeData::V07(data) => &data[..],
+            QRCodeData::V08(data) => &data[..],
+            QRCodeData::V09(data) => &data[..],
+            QRCodeData::V10(data) => &data[..],
+            QRCodeData::V11(data) => &data[..],
+            QRCodeData::V12(data) => &data[..],
+            QRCodeData::V13(data) => &data[..],
+            QRCodeData::V14(data) => &data[..],
+            QRCodeData::V15(data) => &data[..],
+            QRCodeData::V16(data) => &data[..],
+            QRCodeData::V17(data) => &data[..],
+            QRCodeData::V18(data) => &data[..],
+            QRCodeData::V19(data) => &data[..],
+            QRCodeData::V20(data) => &data[..],
+            QRCodeData::V21(data) => &data[..],
+            QRCodeData::V22(data) => &data[..],
+            QRCodeData::V23(data) => &data[..],
+            QRCodeData::V24(data) => &data[..],
+            QRCodeData::V25(data) => &data[..],
+            QRCodeData::V26(data) => &data[..],
+            QRCodeData::V27(data) => &data[..],
+            QRCodeData::V28(data) => &data[..],
+            QRCodeData::V29(data) => &data[..],
+            QRCodeData::V30(data) => &data[..],
+            QRCodeData::V31(data) => &data[..],
+            QRCodeData::V32(data) => &data[..],
+            QRCodeData::V33(data) => &data[..],
+            QRCodeData::V34(data) => &data[..],
+            QRCodeData::V35(data) => &data[..],
+            QRCodeData::V36(data) => &data[..],
+            QRCodeData::V37(data) => &data[..],
+            QRCodeData::V38(data) => &data[..],
+            QRCodeData::V39(data) => &data[..],
+            QRCodeData::V40(data) => &data[..],
+        }
+    }
+}
+
+#[cfg(feature = "fast")]
+impl AsMut<[Module]> for QRCodeData {
+    fn as_mut(&mut self) -> &mut [Module] {
+        match self {
+            QRCodeData::V01(data) => &mut data[..],
+            QRCodeData::V02(data) => &mut data[..],
+            QRCodeData::V03(data) => &mut data[..],
+            QRCodeData::V04(data) => &mut data[..],
+            QRCodeData::V05(data) => &mut data[..],
+            QRCodeData::V06(data) => &mut data[..],
+            QRCodeData::V07(data) => &mut data[..],
+            QRCodeData::V08(data) => &mut data[..],
+            QRCodeData::V09(data) => &mut data[..],
+            QRCodeData::V10(data) => &mut data[..],
+            QRCodeData::V11(data) => &mut data[..],
+            QRCodeData::V12(data) => &mut data[..],
+            QRCodeData::V13(data) => &mut data[..],
+            QRCodeData::V14(data) => &mut data[..],
+            QRCodeData::V15(data) => &mut data[..],
+            QRCodeData::V16(data) => &mut data[..],
+            QRCodeData::V17(data) => &mut data[..],
+            QRCodeData::V18(data) => &mut data[..],
+            QRCodeData::V19(data) => &mut data[..],
+            QRCodeData::V20(data) => &mut data[..],
+            QRCodeData::V21(data) => &mut data[..],
+            QRCodeData::V22(data) => &mut data[..],
+            QRCodeData::V23(data) => &mut data[..],
+            QRCodeData::V24(data) => &mut data[..],
+            QRCodeData::V25(data) => &mut data[..],
+            QRCodeData::V26(data) => &mut data[..],
+            QRCodeData::V27(data) => &mut data[..],
+            QRCodeData::V28(data) => &mut data[..],
+            QRCodeData::V29(data) => &mut data[..],
+            QRCodeData::V30(data) => &mut data[..],
+            QRCodeData::V31(data) => &mut data[..],
+            QRCodeData::V32(data) => &mut data[..],
+            QRCodeData::V33(data) => &mut data[..],
+            QRCodeData::V34(data) => &mut data[..],
+            QRCodeData::V35(data) => &mut data[..],
+            QRCodeData::V36(data) => &mut data[..],
+            QRCodeData::V37(data) => &mut data[..],
+            QRCodeData::V38(data) => &mut data[..],
+            QRCodeData::V39(data) => &mut data[..],
+            QRCodeData::V40(data) => &mut data[..],
+        }
+    }
+}
+
 impl QRCode {
     /// A default `QRCode` will have all it's fields as `None` and a default Matrix filled with `Module::LIGHT`.
     #[must_use]
-    pub const fn default(size: usize) -> Self {
+    pub fn default(size: usize) -> Self {
         QRCode {
-            data: [Module::data(Module::LIGHT); QR_MAX_MODULES],
+            data: QRCodeData::new(size),
             size,
             version: None,
             ecl: None,
@@ -81,13 +279,36 @@ impl Index<usize> for QRCode {
     type Output = [Module];
 
     fn index(&self, index: usize) -> &Self::Output {
-        &self.data[index * self.size..(index + 1) * self.size]
+        #[cfg(feature = "fast")]
+        let data = self.data.as_ref();
+        #[cfg(not(feature = "fast"))]
+        let data = &self.data.0;
+
+        &data[index * self.size..(index + 1) * self.size]
     }
 }
 
 impl IndexMut<usize> for QRCode {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.data[index * self.size..(index + 1) * self.size]
+        #[cfg(feature = "fast")]
+        let data = self.data.as_mut();
+        #[cfg(not(feature = "fast"))]
+        let data = &mut self.data.0;
+
+        &mut data[index * self.size..(index + 1) * self.size]
+    }
+}
+
+impl Index<RangeTo<usize>> for QRCode {
+    type Output = [Module];
+
+    fn index(&self, index: RangeTo<usize>) -> &Self::Output {
+        #[cfg(feature = "fast")]
+        let data = self.data.as_ref();
+        #[cfg(not(feature = "fast"))]
+        let data = &self.data.0;
+
+        &data[..index.end]
     }
 }
 
