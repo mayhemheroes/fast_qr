@@ -1,6 +1,6 @@
 project: fast_qr
-target: fastqr-fuzz
+target: fastqr_fuzz
 
 cmds:
-    - cmd: ./fastqr-fuzz
+    - cmd: ./fastqr_fuzz
       libfuzzer: true
