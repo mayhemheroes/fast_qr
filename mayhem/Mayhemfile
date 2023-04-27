@@ -1,0 +1,6 @@
+project: fast_qr
+target: fastqr_fuzz
+
+cmds:
+    - cmd: ./fastqr_fuzz
+      libfuzzer: true
