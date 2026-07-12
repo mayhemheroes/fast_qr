@@ -1,0 +1,16 @@
+# Mayhem project SLUG (the platform slugifies 'fast_qr' -> 'fast-qr'; the existing 2023
+# project + run history live under the slug, and the server-tar access check resolves the
+# literal name, so the slug form is required for $MAYHEM_PROJECT/testsuite.tar to load).
+project: fast-qr
+target: fastqr_fuzz
+cmds:
+  - cmd: /mayhem/fastqr_fuzz
+    libfuzzer: true
+# server-tar owner/project is the literal SLUG (mayhemheroes/fast-qr): $MAYHEM_PROJECT
+# interpolates the CI --project (github.repository = mayhemheroes/fast_qr), and the
+# server's testsuite access check resolves that underscore name to NO project =>
+# "You do not have access to use a test suite from the project fast_qr", killing run
+# creation. The target segment stays keyed on the literal $MAYHEM_TARGET (seed policy f).
+testsuite:
+  - https://$MAYHEM_DOMAIN/mayhemheroes/fast-qr/$MAYHEM_TARGET/testsuite.tar
+  - file://mayhem/fastqr_fuzz/testsuite
